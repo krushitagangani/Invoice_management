@@ -20,15 +20,14 @@
     - Dashboard:
     - Invoices:
         - List:
-            - Invoice: Pay the invoice mannualy by button click
-        
+            - Invoice: Pay the invoice mannualy by button click 
     - Payment:
         - switch for auto pay mode
         - select user
         - select number of days
         - select fixed amount
-        - Add/Update Credit card details
-        - Schedule Payment based on number of days
+        - Add/Update/delete/view Credit card details
+        - BG Process : Schedule Payment based on number of days
         - BG Process : listed payment task for auto pay mode 
 
 > Payment :
