@@ -74,10 +74,9 @@ scheduled_invoices:
     - period
     - fixed_amount
 
-auto_payments:
+auto_payment_invoices:
     - id
     - invoice_id
-    - payment_id
     - charge_amount
     - credit_card_id
     
