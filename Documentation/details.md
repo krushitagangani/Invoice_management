@@ -74,3 +74,4 @@ Notes:
 
 Questions:
 > What is OpenAPI?
+> payment schedule regarding query
