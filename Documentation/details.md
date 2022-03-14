@@ -63,3 +63,14 @@ Features :
 > Invoice Management:
     - create invoice
     - list by invoice status, pay auto mode
+
+Resourses:
+> https://braindose.blog/2022/01/05/modernize-payment-platform-event-driven-architecture/
+    
+
+Notes:
+> AWS provdes the support for it
+
+
+Questions:
+> What is OpenAPI?

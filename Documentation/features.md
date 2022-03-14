@@ -36,7 +36,8 @@
     - Payment Options:
         - pay by link (from email)
         - pay manually
-        - schedule the pay (if mode is on, then automatically it will be paid from the saved credit card)
+        - schedule the pay (payments on the given number of days)
+        - Auto Pay mode on (if mode is on, then automatically it will be paid from the saved credit card)
 
 > Invoice Management:
     - create invoice
