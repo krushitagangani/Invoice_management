@@ -19,3 +19,12 @@ Flow:
 > Set the auto pay mode
 > Schedule payment:
     > On: select user, select number of days for scheduling, select fixed amount 
+
+
+
+Review Notes:
+=============
+> you missed the invite client step
+> client login
+> scheduling maate client confrimation ni need nai
+> where to schedule the invoice

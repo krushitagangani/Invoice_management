@@ -92,5 +92,3 @@
         - body params: null
         - query params: invoice_id
         - validations:
-
-> 

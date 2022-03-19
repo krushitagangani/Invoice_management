@@ -35,10 +35,11 @@ invoices:
     - desc
     - notes
     - terms_and_conditions
-    - total
     - invoice_status
     - due_date
     - discount
+    - total
+    - netAmount
 
 taxes:
     - id
