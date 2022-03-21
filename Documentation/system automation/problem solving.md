@@ -145,9 +145,35 @@ Task Management:
     - can change the ticket status (created, processing, resolved)
     - when status gets resolved, assign FIFO created ticket to that person
 
+
+Artifacts:
+========
+> UI:
+    - React:
+        - designing: react-bootstrap
+        - form validations: formik hooks
+
+> Data Storage: 
+    - mongodb
+
+> web server for the storage:
+    - nodeJs:
+        - Emails:
+            > To read the emails from the email service / email protocol: SMTP
+            > To Send/Respond the emails: sendGrid
+            > To Parse the emails: mailparser
+            > Question: How can we validate that received email is in decided format?
+            > Email formats for response: Plain HTML & inline CSS 
+
+        - Tag Auto-assign: 
+            > NLP(Natural Language Processing) - Topic Detection Algorithm
+        
+        - BG Process Management:
+            > Event driven archietecture (to handle asyc BG processes)
+
 TODO:
 ------
-email: send grid
+email: send grid, Mandrill 
 auto assign tag: nlp(Natural Language Processing)
 Features listing - done
 required plugins
