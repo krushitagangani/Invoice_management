@@ -47,11 +47,12 @@ Solution:
     Question: Do you provide any data automation services?
 
 Solution:
-    - we need to receive the emails every time
-    - the received email should be in fixed format (as above) with name, contact, question, email can be parsed from the received email
-    - the system would need to parse the received email(store the data of the fixed templated email, data like: name, contact, question, email) and would need to store these details somewhere
-    - the system should able to auto send the question related response to the sender(take the email from the records)
-    
+    - parse the email and extract out name, contact, question & email.
+    - let's store this information along with email's time in database
+    - let the system auto assign the tag
+        - described in the next point
+    - let the system find the auto respond based on the assign tag
+
     - Another Scnario(I am suggesting): (if there is a ui, which can take the deails from user like, contact, mobile, question, email)
         - the user would need to enter the name, contact, email and the question then the system will store the details and based on that question, the system will reply on that person's email
 
@@ -69,8 +70,7 @@ Solution:
 - Problem: Once the tags are assigned, the system should respond the sender by sending email accordingly. The response template can be decided based on the assigned tags. E.g. for above email we can assign tags (automation service, software consulting)
 
 Solution: 
-    - once tag assigned, the system would need to respond to the sender by email.(from the record, system have)
-    - every tag will have the specific template to respond for the specific sender and question related with tag, so system would need to store templates somewhere having tags associated with it(the answers associated with it)
+    - every tag will have the specific template to respond for the specific tag and question related with tag, so system would need to store templates somewhere having tags associated with it
 
 -----------------------------------------------------------------------------------------
 
@@ -81,17 +81,21 @@ Solution:
         - we need to create the person & team first
         - assign the team to the each person
         - team should be associated with the tag
-    - as soon as tag assigned, system would need to create and store the ticket details automatically(related with the tags(tag is associated with the question)) with the team & person details
-    - during the ticket creation, we would need the availablility status of the person from the team, and would need to check the availablility & then need to assign to him/her
-    - if no one is free from the team, then system should record the queue of newly created-unsolved ticket, and as soon as the person gets available, the FIFS(First In, First Serve) ahould apply for the pending ticket should assign to that person
+    - in order to assing the ticket to the relavent person
+        - find the prson in the team based on availability
+            - if person is available
+                - then assign the ticket to him/her
+            - if person is not available
+                - create a ticket without assigning anything
+    - as soon as the person gets available, the FIFS(First In, First Serve) should apply for the pending ticket should assign to that person
+        - as soon as the prev ticket gets resolved, then the next ticket from the queue(un-assigned ticket queue) will be assign to that person.
 
 -----------------------------------------------------------------------------------------
 
 Detailed Flow:
 ==============
-1. registration for the admin user (which consumes the business email)
 2. login for the admin
-3. receive the emails every time(BG process)
+3. receive the emails every time(BG process) - (incomming-received-inbound i.e. inbox, web hook)
 4. check that email should be in fixed format (so that we can parse it and takeout the required details)
 5. on the background process, system will take the sender details and store it to the data base
 6. after the sender info insertion, the system will relate the sender record(question) with the tag and will reply with associated template
@@ -100,7 +104,51 @@ Detailed Flow:
     - we need to associate tag with the formated template(each tag will contain each template)
     - and send a mail to the sender with the related template
 7. as soon as tag assigned, system will need to create ticket and assign to the available person from the specific team associated with the assigned tag(to the question)
-8. the team person should be available to assign the task, so system will need to check wheather person is available ot not, if available then it will assign the task, else it will make a queue and apply FIFO for the task assignment process.
-
+8. the team person should be available to assign the task, so system will need to check wheather person is available or not, if available then it will assign the task, else it will make a queue and apply FIFO for the task assignment process.
 
 Note/Request: will go to the features listing & schema design after ur suggestion/approval
+
+Features
+========
+Admin:
+    - Authentication (JWT)
+    - can receive & see the emails
+    - can send emails(will done by system)
+    - can create the tag
+    - can create the template related with the tag
+    - can assign the tag mannually (unknown)     
+
+Users:
+    - Authentication (JWT)
+
+Email:      
+    - list of received emails
+    - check validation for the received email format
+    - parse email
+    - store details including time in db
+    - respond with the fixed template
+
+Tags:
+    - create/update/delete tags (including "unknown" tag)
+    - list of tags
+    - list of fixed templates related with each tag (including default template)
+    - relate question with tag, if tag will not found then assign it to "unknown" tag)
+    - find the template by tag (if template is not found then consider the default template)
+
+Task Management:
+    - create team, relate team with tag (all tags should be related with the team, except "unknown" tag)
+    - create person assign it to the team
+    - find the team by assigned tag
+    - create the ticket along with the tag name & team
+    - find the available person
+    - assign the ticket to that person
+    - can change the ticket status (created, processing, resolved)
+    - when status gets resolved, assign FIFO created ticket to that person
+
+TODO:
+------
+email: send grid
+auto assign tag: nlp(Natural Language Processing)
+Features listing - done
+required plugins
+schema design
