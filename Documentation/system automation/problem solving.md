@@ -237,7 +237,7 @@ Algorithms:
     - get all team members by team_id
     - find a records which,
         - member_id(s) from above point which are not in "assigned_tickets" entity
-        
+
 > if task gets resolved
     - update the status from "tickets"
     - delete the record from "assigned_tickets" by ticket_id
@@ -248,6 +248,70 @@ Algorithms:
     - inquiry_id
     - tag_id -->
 
+Api Design: (will add other attributes later)
+===========
+> User:
+    - create user
+    - update user
+    - delete user
+    - get all users
+    - getById
+
+> Tag:
+    - create tag
+    - update tag
+    - delete tag
+    - get all tags
+    - getById
+
+> Templates
+    - create template
+    - getById template
+
+> Inquiries:
+    - create inquiry
+    - patch
+        - assign the tag (add/update tag_id)
+    - get all (filters : tag_id, page, limit)
+    - delete
+    - getById
+
+> Tickets:
+    - create
+    - patch
+        - update the status
+    - delete
+    - getById
+    - getAll (filters: tag, status)
+    - assign the ticket to the person from team
+        - method: POST
+        - entity: assigned_tickets
+        - body params: {
+            member_id
+        }
+        - query params: ticket_id
+    - resolve the ticket to the person from team
+        - method: POST
+        - entity: resolved_tickets
+        - body params: {
+            member_id
+        }
+        - query params: ticket_id
+    
+> Teams:
+    - create
+    - getAll
+    - getById
+    - patch
+        - relate the new tag with the team
+
+> Team Members:
+    - create
+    - delete
+    - find the available person(s)
+        - method: GET
+        - body params: null
+        - query params: tag_id
 
 TODO:
 ------
