@@ -82,7 +82,7 @@ Solution:
         - assign the team to the each person
         - team should be associated with the tag
     - in order to assing the ticket to the relavent person
-        - find the prson in the team based on availability
+        - find the person in the team based on availability
             - if person is available
                 - then assign the ticket to him/her
             - if person is not available
@@ -108,7 +108,7 @@ Detailed Flow:
 
 Note/Request: will go to the features listing & schema design after ur suggestion/approval
 
-Features
+Features:
 ========
 Admin:
     - Authentication (JWT)
@@ -170,6 +170,84 @@ Artifacts:
         
         - BG Process Management:
             > Event driven archietecture (to handle asyc BG processes)
+
+Schema Design:
+==============
+users:
+    - id
+    - name
+    - email
+    - password
+    - role (ADMIN, USER)
+
+inquiries:
+    - id
+    - name
+    - email
+    - contact
+    - question
+    - created_at
+    - updated_at
+    - tag_id
+
+tags:
+    - id
+    - name (Default : unknown)
+
+templates:
+    - id
+    - content
+    - title
+    - tags: [array of tag_id] Why array? we can have many tag id's with the same template
+
+tickets:
+    - id
+    - inquiry_id
+    - tag_id
+    - status (CREATED, PROCESSING, RESOLVED)
+    - created_at
+    - updated_at
+
+teams:
+    - id
+    - name
+    - tags: [tag_id] why array? we can have single team with many tags
+
+team_members:
+    - id
+    - user_id
+    - team_id
+
+assigned_tickets:
+    - id
+    - member_id
+    - ticket_id
+    - assigned_at
+
+resolved_tickets:
+    - id
+    - member_id
+    - ticket_id
+    - resolved_at
+
+Algorithms:
+===========
+> How to find the person's availibility?
+    - find team by tag id
+    - get all team members by team_id
+    - find a records which,
+        - member_id(s) from above point which are not in "assigned_tickets" entity
+        
+> if task gets resolved
+    - update the status from "tickets"
+    - delete the record from "assigned_tickets" by ticket_id
+    - add the record to "resolved_tickets" entity (Purpose : to know that by whom the ticket got resolved?)
+
+<!-- assigned_tags
+    - id
+    - inquiry_id
+    - tag_id -->
+
 
 TODO:
 ------

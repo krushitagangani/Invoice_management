@@ -9,12 +9,3 @@ Wishing you luck for your hunting and Sorry for the inconvenience if caused any.
 Have a nice day!
 
 Thank you
-
-
-garlic
-peanuts
-sesame seeds
-red chilli
-corriender
-salt
-coconut
