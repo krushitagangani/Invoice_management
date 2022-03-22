@@ -391,7 +391,7 @@ payload: null
 callback: () => {
     1. get tickets from tickets entity which status="CREATED" and assignee=null
     2. if record found, then get forst record, take ticket_id and call the assign_ticket function by passing ticket_id
-    3. if no record found, then
+    3. if no record found, then return;
 }
 
 Function: close_ticket
@@ -400,5 +400,7 @@ defination: ({ parameters }) => {
     1. get the ticket record from tickets by ticket_id
     2. if record found, then update the ticket record from tickets entity by updating the fields assignee and status
         - status: "CLOSED", updated_at
+    3. if unable to found the record, the throw the error
+        - Error: no ticket found
     4. call the event assign_new_ticket
 }
