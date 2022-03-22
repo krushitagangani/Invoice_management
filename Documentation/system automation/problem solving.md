@@ -106,14 +106,12 @@ Detailed Flow:
 7. as soon as tag assigned, system will need to create ticket and assign to the available person from the specific team associated with the assigned tag(to the question)
 8. the team person should be available to assign the task, so system will need to check wheather person is available or not, if available then it will assign the task, else it will make a queue and apply FIFO for the task assignment process.
 
-Note/Request: will go to the features listing & schema design after ur suggestion/approval
-
 Features:
 ========
 Admin:
     - Authentication (JWT)
-    - can receive & see the emails
-    - can send emails(will done by system)
+    - can receive & see the inquiries
+    - can send inquiry(will done by system)
     - can create the tag
     - can create the template related with the tag
     - can assign the tag mannually (unknown)     
@@ -121,9 +119,9 @@ Admin:
 Users:
     - Authentication (JWT)
 
-Email:      
-    - list of received emails
-    - check validation for the received email format
+inquiry:      
+    - list of received inquiry
+    - check validation for the received inquiriy format
     - parse email
     - store details including time in db
     - respond with the fixed template
@@ -131,27 +129,23 @@ Email:
 Tags:
     - create/update/delete tags (including "unknown" tag)
     - list of tags
-    - list of fixed templates related with each tag (including default template)
-    - relate question with tag, if tag will not found then assign it to "unknown" tag)
-    - find the template by tag (if template is not found then consider the default template)
+    - tag assignment to question (mannual/by system)
+    - tag assignment to template
 
-Task Management:
-    - create team, relate team with tag (all tags should be related with the team, except "unknown" tag)
-    - create person assign it to the team
-    - find the team by assigned tag
-    - create the ticket along with the tag name & team
-    - find the available person
-    - assign the ticket to that person
-    - can change the ticket status (created, processing, resolved)
-    - when status gets resolved, assign FIFO created ticket to that person
+Team Management:
+    - create, update, delete team & assign the tag
+    - create, update, delete team member
 
+Ticket Management:
+    - create, update, delete ticket
+    - assign the ticket (mannual/system)
 
 Artifacts:
 ========
 > UI:
     - React:
         - designing: react-bootstrap
-        - form validations: formik hooks
+        - form validations: react-hook-forms
 
 > Data Storage: 
     - mongodb
@@ -162,7 +156,6 @@ Artifacts:
             > To read the emails from the email service / email protocol: SMTP
             > To Send/Respond the emails: sendGrid
             > To Parse the emails: mailparser
-            > Question: How can we validate that received email is in decided format?
             > Email formats for response: Plain HTML & inline CSS 
 
         - Tag Auto-assign: 
@@ -170,7 +163,11 @@ Artifacts:
         
         - BG Process Management:
             > Event driven archietecture (to handle asyc BG processes)
-
+                - receive email
+                - inquiry_create
+                - tag_assignment
+                    - respond to the sendr
+                    - generate ticket
 Schema Design:
 ==============
 users:
@@ -192,7 +189,7 @@ inquiries:
 
 tags:
     - id
-    - name (Default : unknown)
+    - name
 
 templates:
     - id
@@ -204,31 +201,24 @@ tickets:
     - id
     - inquiry_id
     - tag_id
-    - status (CREATED, PROCESSING, RESOLVED)
+    - status (CREATED, IN PROGRESS, RESOLVED, CLOSED)
     - created_at
     - updated_at
+    - assignee: member_id (null/reference)
+    - assigned_at
+    - resolved_at
 
 teams:
     - id
     - name
     - tags: [tag_id] why array? we can have single team with many tags
+    - status (ACTIVE/DEACTIVE)
 
 team_members:
     - id
     - user_id
     - team_id
-
-assigned_tickets:
-    - id
-    - member_id
-    - ticket_id
-    - assigned_at
-
-resolved_tickets:
-    - id
-    - member_id
-    - ticket_id
-    - resolved_at
+    - status (ACTIVE/DEACTIVE)
 
 Algorithms:
 ===========
@@ -236,13 +226,10 @@ Algorithms:
     - find team by tag id
     - get all team members by team_id
     - find a records which,
-        - member_id(s) from above point which are not in "assigned_tickets" entity
+        - not in the tickets entity as "assignee" field
 
 > if task gets resolved
-    - update the status from "tickets"
-    - delete the record from "assigned_tickets" by ticket_id
-    - add the record to "resolved_tickets" entity (Purpose : to know that by whom the ticket got resolved?)
-
+  
 <!-- assigned_tags
     - id
     - inquiry_id
@@ -269,35 +256,17 @@ Api Design: (will add other attributes later)
     - getById template
 
 > Inquiries:
-    - create inquiry
     - patch
         - assign the tag (add/update tag_id)
     - get all (filters : tag_id, page, limit)
-    - delete
     - getById
 
 > Tickets:
-    - create
     - patch
         - update the status
-    - delete
     - getById
     - getAll (filters: tag, status)
-    - assign the ticket to the person from team
-        - method: POST
-        - entity: assigned_tickets
-        - body params: {
-            member_id
-        }
-        - query params: ticket_id
-    - resolve the ticket to the person from team
-        - method: POST
-        - entity: resolved_tickets
-        - body params: {
-            member_id
-        }
-        - query params: ticket_id
-    
+
 > Teams:
     - create
     - getAll
@@ -313,10 +282,123 @@ Api Design: (will add other attributes later)
         - body params: null
         - query params: tag_id
 
-TODO:
-------
-email: send grid, Mandrill 
-auto assign tag: nlp(Natural Language Processing)
-Features listing - done
-required plugins
-schema design
+Event Driven Archietecture:
+===========================
+Event: email_received
+payload: email_details
+callback: ({payload}) => {
+    1. check that email format
+        Validation: email should be in decided format and all 4 fields are required
+        Error: the system is unable to read the email / missing contact|name|question
+    2. parse the email and extract the contact, name, email, question
+    3. pass all of this details to the function called "create_inquiry"
+}
+
+Function: create_inquiry
+parameters: { name, email, contact, question }
+defination: (parameters) => {
+    1. store above parameters along with the created_at & updated_at field to the "inquiries" entity
+    - Validation: { name, email, contact, question } fields are required fields
+    - Error: missing field
+        - the db will send newly created inquiry as a response to the system
+            - Valiadtion: system should have responded with the newly added record
+            - Error: inquiry_id not found, record not created    
+    2. call the tag_assignment function and pass the newly created inquiry
+}
+
+Function: tag_assignment
+parameters: { inquiry_id }
+defination: (parameters) => {
+parameters: { inquiry_id }
+    1. get the record from inquiries entity by  and findout the keyword from the question field
+        - Validation: inquiry_id should be valid, the record should be exist in the table
+        - Error: invalid inquiry_id, unable to find the inquiry record
+    2. from the above point's keyword, get the tag_id from the "tags" entity by name
+            Validation: keyword should not be empty
+        - if system is able to find the tag then 
+            - update the inquiry record with the tag_id to the "inquiries" entity by inquiry_id
+        - if system is unable to find the tag then assign with the "unknown" tag
+            Validation: the "unknown" tag should be exist in the tags entity
+            Error: unable to find "unknown" tag
+    3. if record is updated with the tag_id, then call the respond_to_sender & create_ticket events 
+}
+
+Event: respond_to_sender
+payload: { inquiry_id }
+callback: ({payload}) => {
+    1. get the tag_id along with the whole record by inquiry_id from the "inquiries" entity
+        - Validation: inquiry_id should be valid
+        - Error: inquiry_id not found, tag
+        _id is not found
+    2. get the templates associated with tag_id as tags from the "templates" entity
+    3. if the template record is found, then
+        - respond to the sender by template's content
+    4. if the template record is not found then
+        - respond with the "default" template
+        Validation: default template should be exist in the system        
+}
+
+Event: create_ticket
+payload: { inquiry_id, tag_id }
+callback: ({payload}) => {
+    1. check first from that ticket is already created or not
+        - get record from tickets by tag_id and inquiry_id, if record found, then throw the error
+        - Error: 
+            - the ticket is already created with the same inquiry_id and tag_id
+    2. create the ticket first
+        - { inquiry_id, tag_id, status: "CREATED", created_at, updated_at }
+        Validation: the ticket status should be CREATED
+    3. call the assign_ticket function and pass ticket_id parameter from the newly created ticket's response object
+}
+
+Function: assign_ticket
+parameters: { ticket_id }
+defination: ({parameters}) => {
+    1. get the ticket record from tickets by ticket_id
+    2. if record found, then
+        - check the status, it should be "CREATED" and the assignee field should have null value
+        - Error: the ticket is already assigned, closed, resolved
+    3. if no record found, then throw an error that no ticket is found
+    4. find the team by tag_id and status="ACTIVE" from "teams" entity
+        Validation: tag_id should be valid
+        Error: tag_id not found, team is not found, team is deactivated
+    5. get all team members from the "team_members" by team_id & status="ACTIVE"
+        Validation: team should not be an empty
+        Error: no member found, no active member found
+    6. find a member_id(s) from point 2's response which are not in "tickets" entity as "assignee" field
+    4. if there is more than 0 member_id(s), then 
+        - use the first member_id from the array
+        - update the ticket record from tickets entity by updating the fields assignee and status
+            - assignee: member_id, status: "IN PROGRESS", updated_at, assigned_at
+    5. if you get the empty array/no record, then return;
+}
+
+
+Function: resolve_ticket
+parameters: { ticket_id }
+defination: ({ parameters }) => {
+    1. get the ticket record from tickets by ticket_id
+    2. if record found, then
+        - check the status, it should be "IN PROGRESS" and the assignee field should have member_id value
+        - Error: the ticket is closed, resolved, ticket is not assigned before
+    3. update the ticket record from tickets entity by updating the fields assignee and status
+        - status: "RESOLVED", updated_at, resolved_at
+    4. call the event assign_new_ticket
+}
+
+Event: assign_new_ticket
+payload: null
+callback: () => {
+    1. get tickets from tickets entity which status="CREATED" and assignee=null
+    2. if record found, then get forst record, take ticket_id and call the assign_ticket function by passing ticket_id
+    3. if no record found, then
+}
+
+Function: close_ticket
+parameters: { ticket_id }
+defination: ({ parameters }) => {
+    1. get the ticket record from tickets by ticket_id
+    2. if record found, then update the ticket record from tickets entity by updating the fields assignee and status
+        - status: "CLOSED", updated_at
+    4. call the event assign_new_ticket
+}
