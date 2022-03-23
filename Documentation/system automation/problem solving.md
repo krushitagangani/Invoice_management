@@ -276,7 +276,8 @@ Api Design: (will add other attributes later)
 
 > Team Members:
     - create
-    - delete
+    - update
+    - get
     - find the available person(s)
         - method: GET
         - body params: null
@@ -287,11 +288,10 @@ Event Driven Archietecture:
 Event: email_received
 payload: email_details
 callback: ({payload}) => {
-    1. check that email format
+    1. parse the email and extract the contact, name, email, question
         Validation: email should be in decided format and all 4 fields are required
         Error: the system is unable to read the email / missing contact|name|question
-    2. parse the email and extract the contact, name, email, question
-    3. pass all of this details to the function called "create_inquiry"
+    2. pass all of this details to the function called "create_inquiry"
 }
 
 Function: create_inquiry
@@ -302,25 +302,22 @@ defination: (parameters) => {
     - Error: missing field
         - the db will send newly created inquiry as a response to the system
             - Valiadtion: system should have responded with the newly added record
-            - Error: inquiry_id not found, record not created    
-    2. call the tag_assignment function and pass the newly created inquiry
+            - Error: record not created    
+    2. call the tag_assignment event and pass the newly created inquiry
 }
 
-Function: tag_assignment
-parameters: { inquiry_id }
-defination: (parameters) => {
-parameters: { inquiry_id }
-    1. get the record from inquiries entity by  and findout the keyword from the question field
-        - Validation: inquiry_id should be valid, the record should be exist in the table
-        - Error: invalid inquiry_id, unable to find the inquiry record
-    2. from the above point's keyword, get the tag_id from the "tags" entity by name
-            Validation: keyword should not be empty
-        - if system is able to find the tag then 
-            - update the inquiry record with the tag_id to the "inquiries" entity by inquiry_id
-        - if system is unable to find the tag then assign with the "unknown" tag
-            Validation: the "unknown" tag should be exist in the tags entity
-            Error: unable to find "unknown" tag
-    3. if record is updated with the tag_id, then call the respond_to_sender & create_ticket events 
+Event: tag_assignment
+payload: { inquiry_id }
+callback: (parameters) => {
+    1. try to get the inquiry based on given inquiry_id
+    - If no inquiry found, throw an error
+    - If inquiry found, validate if there is already tag assigned or not
+    2. If no tag is assigned, do following:
+        - use the NLP or other mechanism to get relevant keyword based on inquiry question
+        - try to find the tag matching with given keyword
+    - if no tag is found, assigned unknown tag
+    - if tag is found, assigned the tag to inquiry
+    3. if record is updated with the tag_id, then trigger the respond_to_sender & create_ticket events 
 }
 
 Event: respond_to_sender
@@ -328,8 +325,7 @@ payload: { inquiry_id }
 callback: ({payload}) => {
     1. get the tag_id along with the whole record by inquiry_id from the "inquiries" entity
         - Validation: inquiry_id should be valid
-        - Error: inquiry_id not found, tag
-        _id is not found
+        - Error: inquiry_id not found, tag_id is not found
     2. get the templates associated with tag_id as tags from the "templates" entity
     3. if the template record is found, then
         - respond to the sender by template's content
@@ -341,36 +337,26 @@ callback: ({payload}) => {
 Event: create_ticket
 payload: { inquiry_id, tag_id }
 callback: ({payload}) => {
-    1. check first from that ticket is already created or not
+    1. check ticket is already created or not
         - get record from tickets by tag_id and inquiry_id, if record found, then throw the error
         - Error: 
             - the ticket is already created with the same inquiry_id and tag_id
-    2. create the ticket first
+    2. create the ticket,
         - { inquiry_id, tag_id, status: "CREATED", created_at, updated_at }
-        Validation: the ticket status should be CREATED
-    3. call the assign_ticket function and pass ticket_id parameter from the newly created ticket's response object
+    3. call the assign_ticket function and pass ticket record parameter from the newly created ticket's response object
 }
 
 Function: assign_ticket
-parameters: { ticket_id }
+parameters: { ticket }
 defination: ({parameters}) => {
-    1. get the ticket record from tickets by ticket_id
-    2. if record found, then
-        - check the status, it should be "CREATED" and the assignee field should have null value
-        - Error: the ticket is already assigned, closed, resolved
-    3. if no record found, then throw an error that no ticket is found
-    4. find the team by tag_id and status="ACTIVE" from "teams" entity
-        Validation: tag_id should be valid
-        Error: tag_id not found, team is not found, team is deactivated
-    5. get all team members from the "team_members" by team_id & status="ACTIVE"
-        Validation: team should not be an empty
-        Error: no member found, no active member found
-    6. find a member_id(s) from point 2's response which are not in "tickets" entity as "assignee" field
-    4. if there is more than 0 member_id(s), then 
-        - use the first member_id from the array
-        - update the ticket record from tickets entity by updating the fields assignee and status
-            - assignee: member_id, status: "IN PROGRESS", updated_at, assigned_at
-    5. if you get the empty array/no record, then return;
+    1. Try to find active team by specifying the tag available in the ticket
+    2. if there is active team:
+        - try to find the available active member (who is not assigned with any other ticket)
+            - if member is found, assign the ticket (update ticket record's assignee field with member, assigned_at with current time)
+            - if no member is found:
+                - leave the ticket as unassigned
+    3. if there is no active team:
+        - leave the ticket as unassigned
 }
 
 
@@ -383,14 +369,14 @@ defination: ({ parameters }) => {
         - Error: the ticket is closed, resolved, ticket is not assigned before
     3. update the ticket record from tickets entity by updating the fields assignee and status
         - status: "RESOLVED", updated_at, resolved_at
-    4. call the event assign_new_ticket
+    4. trigger the event assign_new_ticket and pass the member_id as payload
 }
 
 Event: assign_new_ticket
-payload: null
-callback: () => {
-    1. get tickets from tickets entity which status="CREATED" and assignee=null
-    2. if record found, then get forst record, take ticket_id and call the assign_ticket function by passing ticket_id
+payload: member_id
+callback: ({payload}) => {
+    1. get oldest tickets from tickets entity which status="CREATED" and assignee=null and tag should be assoiate the member's team tag
+    2. if records found, call the assign_ticket function and pass the first record as argument.
     3. if no record found, then return;
 }
 
@@ -402,5 +388,164 @@ defination: ({ parameters }) => {
         - status: "CLOSED", updated_at
     3. if unable to found the record, the throw the error
         - Error: no ticket found
-    4. call the event assign_new_ticket
 }
+
+Class Diagram
+=============
+
+> Class User:
+- id
+- name
+- email
+- password
+- role
+- users
+---------------
+createUser()
+editUser()
+deleteUser()
+getUser()
+getUsers()
+
+> Class Role:
+adminPermissions
+userPermissions
+-----------------
+checkPermissions()
+
+> Class Tag:
+- id
+- name
+- tags
+---------
+createTag()
+updateTag()
+deleteTag()
+getTag()
+getTags()
+findTag()
+
+> Class Template:
+- id
+- tags
+- content
+- title
+----------
+createTemplate()
+getTemplate()
+
+> Class Inquiry()
+- id
+- name
+- email
+- contact
+- created_at
+- updated_at
+- tag_id
+--------------
+createInquiry()
+updateInquiry()
+getInquiry()
+getInquiries()
+
+> Class Ticket()
+- id
+- inquiry_id
+- tag_id
+- status
+- created_at
+- updated_at
+- assignee
+- assigned_at
+- resolved_at
+- tickets
+----------------
+createTicket() 
+getTicket()
+updateTicket()
+getTickets()
+getOldestTickets()
+AssignTicket()
+ResolveTicket()
+CloseTicket()
+
+> Class ValidateTicketStatus
+- isAlreadyCreated
+- isAlreadyAssigned
+- isAlreadyResolved
+- isAlreadyClosed
+----------------------
+checkTicketState()
+
+> Class Team
+- id
+- name
+- tags
+- status
+------------
+createTeam()
+getTeam()
+updateTeam()
+getActiveTeams()
+
+> Class TeamMembers
+- id
+- user_id
+- team_id
+- status
+- members
+--------------
+createTeamMember()
+updateTeamMember()
+getTeamMember()
+getTeamMembers()
+getAvailableTeamMembers()
+
+> Class Validations
+- isValidInquiry
+- isValidUser
+- isValidTag
+- isValidTemplate
+- isValidTicket
+- isValidTeam
+- isValidTeamMembers
+-------------------------
+checkInquiryInput()
+checkUserInput()
+checkTagInput()
+checkTemplateInput()
+checkTicketInput()
+checkTeamInput()
+checkTeamMemberInput()
+
+> Class Error
+- error_code
+- error_message
+------------------
+NotFound()
+AlreadyExist()
+RecordAlreadyCreated()
+RecordAlreadyCreated()
+FailToRespond()
+
+> Class EmailEventManager
+- email
+----------
+emailReceived()
+respondToSender()
+
+> Class EventManager
+tagAssignment()
+
+> Class TicketEventManager()
+ticketEventManager()
+createTicket()
+assignNewTicket()
+
+
+
+
+
+
+
+
