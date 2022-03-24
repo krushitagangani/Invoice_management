@@ -401,29 +401,52 @@ Class Diagram
 - role
 - users
 ---------------
-createUser()
-editUser()
-deleteUser()
-getUser()
-getUsers()
+createUser({ name, email, password, role }) => {
+    return { name, email, password, role }
+}
+editUser(id, { name, email, password, role }) => {
+    return { name, email, password, role }
+}
+deleteUser(id) => {
+    return bolean
+}
+getUser(id) => {
+    return { id, name, email, password, role }
+}
+getUsers(filters) => {
+    return [{ name, email, password, role },...]
+}
 
 > Class Role:
 adminPermissions
 userPermissions
 -----------------
-checkPermissions()
+checkPermissions(role) => {
+    return boolean
+}
 
 > Class Tag:
 - id
 - name
-- tags
 ---------
-createTag()
-updateTag()
-deleteTag()
-getTag()
-getTags()
-findTag()
+createTag({name}) => {
+    return { id, name }
+}
+updateTag(id, name)=> {
+    return { id, name }
+}
+deleteTag(id)=> {
+    return boolean
+}
+getTag(id) => {
+    return { id, name }
+}
+getTags(filters) => {
+    return [{id, name}]
+}
+findKeyword(question) => {
+    return string
+}
 
 > Class Template:
 - id
@@ -431,8 +454,12 @@ findTag()
 - content
 - title
 ----------
-createTemplate()
-getTemplate()
+createTemplate({[tag_id], content,title}) => {
+    return {id, [tag_id], content,title}
+}
+getTemplate(tag_id) => {
+    return {id, [tag_id], content,title}
+}
 
 > Class Inquiry()
 - id
@@ -443,10 +470,18 @@ getTemplate()
 - updated_at
 - tag_id
 --------------
-createInquiry()
-updateInquiry()
-getInquiry()
-getInquiries()
+createInquiry({ name, email, contact, question }) => {
+    return { id, name, email, contact, question, created_at, updated_at }
+}
+assignTagToInquiry(id, tag_id) => {
+ return { id, name, email, contact, question, created_at, updated_at, tag_id }
+}
+getInquiry(id) => {
+ return { id, name, email, contact, question, created_at, updated_at, tag_id }
+}
+getInquiries(filters) => {
+    return [{ id, name, email, contact, question, created_at, updated_at, tag_id }]
+}
 
 > Class Ticket()
 - id
@@ -458,24 +493,40 @@ getInquiries()
 - assignee
 - assigned_at
 - resolved_at
-- tickets
+- ticketss
 ----------------
-createTicket() 
-getTicket()
-updateTicket()
-getTickets()
-getOldestTickets()
-AssignTicket()
-ResolveTicket()
-CloseTicket()
-
+createTicket({ inquiry_id, tag_id, status }) => {
+    return { id, inquiry_id, tag_id, status }
+}
+getTicket(id) => {
+    return {id, inquiry_id, tag_id, status, created_at, updated_at, assignee: member_id, assigned_at, resolved_at
+}}
+updateTicketStatus(id, status) => {
+    return {id, inquiry_id, tag_id, status, created_at, updated_at, assignee: member_id, assigned_at, resolved_at}
+}
+getTickets(filters) => {
+    return [ {
+    id, inquiry_id, tag_id, status, created_at, updated_at, assignee: member_id, assigned_at, resolved_at
+}]
+}
+assignTicket({ticketObj}) => {
+    return {id, inquiry_id, tag_id, status, created_at, updated_at, assignee: member_id, assigned_at, resolved_at}
+}
+addAssignee(id, member_id) => {
+    return {id, inquiry_id, tag_id, status, created_at, updated_at, assignee: member_id, assigned_at, resolved_at}
+}
+getAvailableTeamMembers([member_id] => {
+    return [member_id]
+})
 > Class ValidateTicketStatus
 - isAlreadyCreated
 - isAlreadyAssigned
 - isAlreadyResolved
 - isAlreadyClosed
 ----------------------
-checkTicketState()
+checkTicketState(status) => {
+    return boolean
+}
 
 > Class Team
 - id
@@ -483,10 +534,26 @@ checkTicketState()
 - tags
 - status
 ------------
-createTeam()
-getTeam()
-updateTeam()
-getActiveTeams()
+createTeam({ name, [tag_id], status }) => {
+    return {
+        id, name, [tag_id], status 
+    }
+}
+getTeam(id) => {
+    return {
+        id, name, [tag_id], status 
+    }
+}
+updateTeamStatus(id, status) => {
+    return {
+        id, name, [tag_id], status 
+    }
+}
+getTeams(filters) => {
+    return [{
+        id, name, [tag_id], status 
+    }]
+}
 
 > Class TeamMembers
 - id
@@ -495,11 +562,25 @@ getActiveTeams()
 - status
 - members
 --------------
-createTeamMember()
-updateTeamMember()
-getTeamMember()
-getTeamMembers()
-getAvailableTeamMembers()
+createTeamMember({ user_id, team_id, status}) => {
+    return { id, user_id, team_id, status }
+}
+updateTeamMemberStatus(id, status) => {
+return {
+       id, user_id, team_id, status 
+    }
+}
+getTeamMember(id) => {
+    return  {
+       id, user_id, team_id, status 
+    }
+}
+getTeamMembers(filters) => {
+    return  {
+       id, user_id, team_id, status 
+    }
+}
+
 
 > Class Validations
 - isValidInquiry
@@ -510,13 +591,13 @@ getAvailableTeamMembers()
 - isValidTeam
 - isValidTeamMembers
 -------------------------
-checkInquiryInput()
-checkUserInput()
-checkTagInput()
-checkTemplateInput()
-checkTicketInput()
-checkTeamInput()
-checkTeamMemberInput()
+checkInquiryInput(obj) => boolean
+checkUserInput(obj) => boolean
+checkTagInput(obj) => boolean
+checkTemplateInput(obj) => boolean
+checkTicketInput(obj) => boolean
+checkTeamInput(obj) => boolean
+checkTeamMemberInput(obj) => boolean
 
 > Class Error
 - error_code
@@ -528,19 +609,31 @@ RecordAlreadyCreated()
 RecordAlreadyCreated()
 FailToRespond()
 
+> Class Email
+- contact
+- name
+- email
+- question
+------------
+parseEmail(email) => {}
+extractEmail(email) => { name, contact, email, question }
+sendEmail({content}) => {}
+
 > Class EmailEventManager
 - email
 ----------
-emailReceived()
-respondToSender()
+emailReceived(email_details) => {
+parseEmail()
+return true
+}
+respondToSender(inquiry_id) => {}
 
 > Class EventManager
-tagAssignment()
+tagAssignment({inquiry_id}) => {}
 
 > Class TicketEventManager()
-ticketEventManager()
-createTicket()
-assignNewTicket()
+createTicket({ inquiry_id, tag_id }) => {}
+assignNewTicket({member_id}) => {}
 
 
 
